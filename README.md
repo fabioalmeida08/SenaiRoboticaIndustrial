@@ -2,7 +2,7 @@
 
 ![imagem_arquitetura](./arquitetura_aws_senai_robotica.png "arquitetura serveless")
 
-## todos
+## Todo-list
 
-- [ ] transform code to async
-- [ ] replace push button for read optical sensor signal
+- [ ] transformar o código em assíncrono
+- [ ] substituir o botão pelo leitura do sensor óptico da esteira
