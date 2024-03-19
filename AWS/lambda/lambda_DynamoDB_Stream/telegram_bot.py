@@ -5,6 +5,7 @@ import json
 
 class Telegram_bot:
     def __init__(self, event):
+        print(event)
         self.bot_token_parameter = "/BotToken/Senai"
         self.chat_id_parameter = "ChatID"
         self.uuid = (
@@ -14,11 +15,32 @@ class Telegram_bot:
             .get("id", {})
             .get("S")
         )
-        self.date = self.date = (
+        self.date = (
             event.get("Records", [{}])[0]
             .get("dynamodb", {})
             .get("NewImage", {})
             .get("date", {})
+            .get("S")
+        )
+        self.material = (
+            event.get("Records", [{}])[0]
+            .get("dynamodb", {})
+            .get("NewImage", {})
+            .get("material", {})
+            .get("S")
+        )
+        self.size = (
+            event.get("Records", [{}])[0]
+            .get("dynamodb", {})
+            .get("NewImage", {})
+            .get("size", {})
+            .get("S")
+        )
+        self.lote = (
+            event.get("Records", [{}])[0]
+            .get("dynamodb", {})
+            .get("NewImage", {})
+            .get("lote", {})
             .get("S")
         )
         self.success = {
@@ -56,5 +78,5 @@ class Telegram_bot:
             return self.error
 
     def process_event(self):
-        message = f"peça registrada : {self.uuid}, em {self.date}"
+        message = f"Nova peça registrada: \nID: {self.uuid} \nTamanho: {self.size} \nMaterial: {self.material} \nLote: {self.lote} \nData: {self.date}"
         return self.send_telegram_message(message=message)
