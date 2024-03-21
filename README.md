@@ -4,5 +4,5 @@
 
 ## Todo-list
 
-- [ ] transformar o código em assíncrono
-- [ ] substituir o botão pelo leitura do sensor óptico da esteira
+- [x] substituir o botão pela leitura do sensor óptico da esteira
+- [x] refatorar o código com o design de sensores da esteira
