@@ -11,11 +11,12 @@ LiquidCrystal_I2C lcd(0x3F, 16, 2);
 const char* ssid = "";
 const char* password = "";
 const char* serverUrl = "";
+
 const int SENSOR_BIG = 0;
-const int SENSOR_MEDIUM = 14;
-const int SENSOR_SMALL = 12;
+const int SENSOR_MEDIUM = 12;
+const int SENSOR_SMALL = 14;
 const int SENSOR_METAL = 13;
-const int SENSOR_PLASTIC = 10;
+const int SENSOR_POL = 10;
 
 String* read_piece();
 
@@ -44,7 +45,7 @@ void setup() {
   pinMode(SENSOR_BIG, INPUT_PULLUP);
   pinMode(SENSOR_MEDIUM, INPUT_PULLUP);
   pinMode(SENSOR_SMALL, INPUT_PULLUP);
-  pinMode(SENSOR_PLASTIC, INPUT_PULLUP);
+  pinMode(SENSOR_POL, INPUT_PULLUP);
   pinMode(SENSOR_METAL, INPUT_PULLUP);
 }
 
@@ -63,7 +64,7 @@ void loop() {
   // e aguardará o acionamento dos sensores de materiais para retornar um array contendo as informações
   // do sensores e continuar o fluxo do código
   if (read_sensor_big == 0 || read_sensor_medium == 0 || read_sensor_small == 0) {
-    String* piece_info = read_piece(read_sensor_big, read_sensor_medium, read_sensor_small);
+    String* piece_info = read_piece();
     UUID uuid = create_uuid();
     send_message(uuid, piece_info);
   }
@@ -92,11 +93,12 @@ String send_message(UUID uuid, String* piece_info) {
   WiFiClientSecure client;
   client.setInsecure();
 
+
   StaticJsonDocument<48> doc;
 
   doc["uuid"] = uuid;
-  doc["material"] = piece_info[0];
-  doc["size"] = piece_info[1];
+  doc["material"] = piece_info[1];
+  doc["size"] = piece_info[0];
   String json_payload;
   serializeJson(doc, json_payload);
 
@@ -172,8 +174,10 @@ void wifi_connecting_fail_lcd() {
   lcd.print("Erro ao ");
   lcd.setCursor(0, 1);
   lcd.print("Conectar Wifi :(");
+  delay(10000);
   lcd.clear();
 }
+
 void sending_msg_display_lcd() {
   lcd.setCursor(0, 0);
   lcd.print("Enviando");
@@ -191,41 +195,46 @@ UUID create_uuid() {
   return uuid;
 }
 
-String* read_piece(int read_sensor_big, int read_sensor_medium, int read_sensor_small) {
+String* read_piece() {
   String size = "Desconhecido";
-  String material = "Desconhecido";
+  String material = "Polimero";
 
-  int read_sensor_plastic = digitalRead(SENSOR_PLASTIC);
-  int read_sensor_metal = digitalRead(SENSOR_METAL);
+  int size_b = 0;
+  int size_m = 0;
+  int size_s = 0;
 
+  // aguardar até último sensor ser ativado para sair do loop
+  while (digitalRead(SENSOR_POL) == 1) {
 
-  // verifição se um dos três primeiros sensores foi ativado
-  if (read_sensor_big == 0 || read_sensor_medium == 0 || read_sensor_small == 0) {
-    // determinar o tamnho da peça com base no sensor ativado
-    if (read_sensor_big == 0) {
-      size = "Grande";
-    } else if (read_sensor_medium == 0) {
-      size = "Medio";
-    } else if (read_sensor_small == 0) {
-      size = "Pequeno";
+    // definindo o valor da peça baseado na leitura do sensor
+    if (digitalRead(SENSOR_BIG) == 0) {
+      size_b = 1;
+    } else if (digitalRead(SENSOR_MEDIUM) == 0) {
+      size_m = 1;
+    } else if (digitalRead(SENSOR_SMALL) == 0) {
+      size_s = 1;
     }
 
-    // aguardar até que um dos sensores de material ser ativado
-    while (read_sensor_plastic == 1 && read_sensor_metal == 1) {
-      // Ler os estados dos sensores novamente
-      read_sensor_plastic = digitalRead(SENSOR_PLASTIC);
-      read_sensor_metal = digitalRead(SENSOR_METAL);
-
-      // OBS: sem chamar o yield a placa se auto-resetava em 2 segundos
-      yield();
-    }
-
-    // determinar o tipo do material com base no sensor ativado
-    if (read_sensor_plastic == 0) {
-      material = "Polimero";
-    } else if (read_sensor_metal == 0) {
+    // definir se a peça é de metal de acordo com o sensor
+    if (digitalRead(SENSOR_METAL) == 0) {
       material = "Metal";
     }
+
+    // OBS: sem chamar o yield() aqui o WTD da placa faz ela resetar caso o loop demore mais de 2 segundos
+    // sem retorno
+    yield();
+  }
+
+  // lógical para definir o tamanho da peça baseado na leitura do sensores
+  // de acordo com o padrão da esteira
+  if (size_b == 1) {
+    size = "Grande";
+  } else if (size_s == 1 && size_m == 1) {
+    size = "Medio";
+  } else if (size_s == 1 && size_m == 0) {
+    size = "Pequeno";
+  } else if (size_m == 1) {
+    size = "Medio";
   }
 
   // alocação de espaço na memória para o ponteiro e acionar o display lcd com informaçoes
