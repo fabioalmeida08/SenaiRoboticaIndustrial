@@ -43,6 +43,7 @@ class Telegram_bot:
             .get("lote", {})
             .get("S")
         )
+        self.eventName = event.get("Records", [{}])[0].get("eventName", {})
         self.success = {
             "statusCode": 201,
             "body": json.dumps({"status": "mensagem enviada com successo"}),
@@ -71,12 +72,16 @@ class Telegram_bot:
         }
 
         response = requests.post(url, json=data)
-        print(response.text)
         if response.ok:
             return self.success
         else:
             return self.error
 
     def process_event(self):
-        message = f"Nova peça registrada: \nID: {self.uuid} \nTamanho: {self.size} \nMaterial: {self.material} \nLote: {self.lote} \nData: {self.date}"
-        return self.send_telegram_message(message=message)
+        if self.eventName == "INSERT":
+            message = f"Nova peça registrada: \nID: {self.uuid} \nTamanho: {self.size} \nMaterial: {self.material} \nLote: {self.lote} \nData: {self.date}"
+            return self.send_telegram_message(message=message)
+        if self.eventName == "REMOVE":
+            message = f"Peça excluida: \nID: {self.uuid}"
+            return self.send_telegram_message(message=message)
+        return self.success
