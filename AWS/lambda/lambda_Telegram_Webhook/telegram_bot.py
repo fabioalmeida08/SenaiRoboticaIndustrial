@@ -1,6 +1,7 @@
-import requests
 import boto3
+import requests
 import json
+from boto3.dynamodb.conditions import Key
 
 
 class Telegram_bot:
@@ -39,39 +40,128 @@ class Telegram_bot:
         }
 
         response = requests.post(url, json=data)
-        print(response.text)
         if response.ok:
             return self.success
         else:
             return self.error
 
+    def initialize_dynamodb(self):
+        dynamodb = boto3.resource("dynamodb")
+
+        # pegar o nome da tabela do SSM
+        ssm = boto3.client("ssm")
+        senai_table_name_parameter = ssm.get_parameter(Name="/Senai/DynamoDB")
+        senai_table = senai_table_name_parameter["Parameter"]["Value"]
+
+        return dynamodb.Table(senai_table)
+
     def process_event(self):
-        if self.command == "/listar10":
+        try:
+            # dividir o comando para pegar os paremetros passados pelo user
+            par = self.command.split()
 
-            dynamodb = boto3.client("dynamodb")
+            # tornar a primeira letra de cada parametro maiúscula
+            for i in range(len(par)):
+                par[i] = par[i].capitalize()
 
-            # pegar o nome da tabela do ssm
-            ssm = boto3.client("ssm")
-            senai_table_name_parameter = ssm.get_parameter(Name="/Senai/DynamoDB")
-            senai_table = senai_table_name_parameter["Parameter"]["Value"]
+            # criaçao dos arrays com os valores válidos para validação
+            materials = ["Metal", "Polimero"]
+            sizes = ["Pequeno", "Medio", "Grande"]
 
-            # estou usando o scan ao em vez
-            # de query, mesmo sabendo que não é o método mais recomendado,
-            # pois quero manter o projeto dentro do free tier, e criar um GSI ou LSI
-            # incorreria em custos adicionais.
-            response = dynamodb.scan(
-                TableName=senai_table,
-            )
+            # validação do comando
+            if len(par) < 2 or (
+                par[0] == "/s" and len(par) == 2 and par[1] not in materials
+            ):
+                message = "Comando inválido:\nuse /s acompanhado do material ou material e tamanho\nEx: /s metal ou /s polimero pequeno"
+                return self.send_telegram_message(message)
+            elif par[0] == "/s":
+                if len(par) == 3 and (par[1] not in materials or par[2] not in sizes):
+                    message = "Comando inválido:\nMaterial ou tamanho inválido\nMateriais válidos: metal, polimero\nTamanhos válidos: pequeno, medio, grande"
+                    return self.send_telegram_message(message)
+            elif len(par) > 3 or len(par) == 1 and par[0] == "/s":
+                message = "Comando inválido:\nuse /s acompanhado do material ou material e tamanho\nEx: /s metal ou /s polimero pequeno"
+                return self.send_telegram_message(message)
 
-            items = response["Items"]
+            table = self.initialize_dynamodb()
+            all_items = []
 
-            formatted_items = [
-                {"id": item["id"]["S"], "date": item["date"]["S"]} for item in items
-            ]
+            # token de paginação inicial
+            pagination_token = None
 
-            # ordene os itens pela data
-            sorted_items = sorted(
-                formatted_items, key=lambda x: x["date"], reverse=True
-            )
+            # comparaçao dos valores dos parametros
+            if (
+                len(par) == 3
+                and par[0] == "/s"
+                and par[1] in materials
+                and par[2] in sizes
+            ):
+                try:
+                    # paginação
+                    while True:
+                        if pagination_token is None:
+                            response = table.query(
+                                IndexName="material-size-index",
+                                KeyConditionExpression=Key("material").eq(par[1])
+                                & Key("size").eq(par[2]),
+                                ScanIndexForward=False,
+                            )
+                        else:
+                            response = table.query(
+                                IndexName="material-size-index",
+                                KeyConditionExpression=Key("material").eq(par[1])
+                                & Key("size").eq(par[2]),
+                                ScanIndexForward=False,
+                                ExclusiveStartKey=pagination_token,
+                            )
 
-            return self.send_telegram_message(message=sorted_items)
+                        # adicionando os itens recuperados na lista
+                        all_items.extend(response["Items"])
+
+                        # verificaçao para paginação , caso exista mais items
+                        if "LastEvaluatedKey" in response:
+                            pagination_token = response["LastEvaluatedKey"]
+                        else:
+                            break
+                except Exception as e:
+                    print("erro --->", e)
+                    return self.success
+            elif len(par) == 2 and par[0] == "/s" and par[1] in materials:
+                try:
+                    while True:
+                        if pagination_token is None:
+                            response = table.query(
+                                IndexName="material-size-index",
+                                KeyConditionExpression=Key("material").eq(par[1]),
+                                ScanIndexForward=False,
+                            )
+                        else:
+                            response = table.query(
+                                IndexName="material-size-index",
+                                KeyConditionExpression=Key("material").eq(par[1]),
+                                ScanIndexForward=False,
+                                ExclusiveStartKey=pagination_token,
+                            )
+
+                        all_items.extend(response["Items"])
+
+                        if "LastEvaluatedKey" in response:
+                            pagination_token = response["LastEvaluatedKey"]
+                        else:
+                            break
+                except Exception as e:
+                    print("erro --->", e)
+                    return self.success
+
+            # organizar o retorno dos ultimos 5 items e formatar para a mensagem do bot
+            sorted_by_date = sorted(all_items, key=lambda x: x["date"], reverse=True)
+            last_five = sorted_by_date[:5]
+            formated_res = []
+            for item in last_five:
+                piece = f"ID: {item['id']} \nMaterial: {item['material']} \nTamanho: {item['size']}\nLote: {item['lote']} \nData: {item['date']}\n"
+                formated_res.append(piece)
+            message = "\n".join(formated_res)
+            return self.send_telegram_message(message=message)
+        except Exception as e:
+            print("erro --->", e)
+            # retornando sucesso mesmo no caso de erro pois o bot do telegram ficará tentando enviar a mensagem até consiguir um status 201
+            return self.success
