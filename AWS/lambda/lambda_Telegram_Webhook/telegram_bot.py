@@ -124,6 +124,8 @@ class Telegram_bot:
                             break
                 except Exception as e:
                     print("erro --->", e)
+                    # retornando sucesso mesmo no caso de erro
+                    # para debugar pois o bot do telegram ficará tentando enviar a mensagem até receber um status 200
                     return self.success
             elif len(par) == 2 and par[0] == "/s" and par[1] in materials:
                 try:
@@ -150,6 +152,8 @@ class Telegram_bot:
                             break
                 except Exception as e:
                     print("erro --->", e)
+                    # retornando sucesso mesmo no caso de erro
+                    # para debugar pois o bot do telegram ficará tentando enviar a mensagem até receber um status 200
                     return self.success
 
             # organizar o retorno dos ultimos 5 items e formatar para a mensagem do bot
@@ -163,5 +167,6 @@ class Telegram_bot:
             return self.send_telegram_message(message=message)
         except Exception as e:
             print("erro --->", e)
-            # retornando sucesso mesmo no caso de erro pois o bot do telegram ficará tentando enviar a mensagem até consiguir um status 201
+            # retornando sucesso mesmo no caso de erro
+            # para debugar pois o bot do telegram ficará tentando enviar a mensagem até receber um status 200
             return self.success
