@@ -1,6 +1,6 @@
 # [WIP] Trabalho do Curso de Robótica Industrial Senai
 
-![imagem_arquitetura](./arquitetura_aws_senai_robotica.png "arquitetura serveless")
+![imagem_arquitetura](./arquitetura_serveless_aws.png "arquitetura serveless")
 
 ## Todo-list
 
