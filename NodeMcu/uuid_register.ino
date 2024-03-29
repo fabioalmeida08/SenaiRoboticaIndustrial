@@ -1,3 +1,7 @@
+#define BLYNK_TEMPLATE_ID ""
+#define BLYNK_TEMPLATE_NAME ""
+#define BLYNK_AUTH_TOKEN ""
+// #define BLYNK_PRINT Serial
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h> 
 #include "UUID.h"
@@ -6,8 +10,8 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <Arduino.h>
+#include <BlynkSimpleEsp8266.h>
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
 const char* ssid = "";
 const char* password = "";
 const char* serverUrl = "";
@@ -17,11 +21,14 @@ const int SENSOR_MEDIUM = 12;
 const int SENSOR_SMALL = 14;
 const int SENSOR_METAL = 13;
 const int SENSOR_POL = 10;
+const int SENSOR_START = 15;
 
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
 String* read_piece();
 
 void setup() {
   Serial.begin(115200);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, password);
   lcd.init();
   lcd.backlight();
 
@@ -47,6 +54,7 @@ void setup() {
   pinMode(SENSOR_SMALL, INPUT_PULLUP);
   pinMode(SENSOR_POL, INPUT_PULLUP);
   pinMode(SENSOR_METAL, INPUT_PULLUP);
+  pinMode(SENSOR_START, OUTPUT);
 }
 
 void loop() {
@@ -68,6 +76,7 @@ void loop() {
     UUID uuid = create_uuid();
     send_message(uuid, piece_info);
   }
+  Blynk.run();
 }
 
 void displayUUID(UUID uuid) {
@@ -203,7 +212,7 @@ String* read_piece() {
   int size_m = 0;
   int size_s = 0;
 
-  // aguardar até último sensor ser ativado para sair do loop
+  // aguardar até ultimo sensor ser ativado para sair do loop
   while (digitalRead(SENSOR_POL) == 1) {
 
     // definindo o valor da peça baseado na leitura do sensor
@@ -258,5 +267,20 @@ void waiting_piece_message() {
   lcd.print("Aguardando ");
   lcd.setCursor(0, 1);
   lcd.print("Sensor...");
-  delay(200);
+}
+
+BLYNK_WRITE(V0)
+{
+  int value = param.asInt();
+  
+  if(value == 1) {
+    digitalWrite(SENSOR_START, HIGH);
+  } else {
+    digitalWrite(SENSOR_START, LOW);
+  }
+}
+
+BLYNK_CONNECTED()
+{
+  Serial.println("conectado blynk");
 }
