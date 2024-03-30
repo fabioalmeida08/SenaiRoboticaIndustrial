@@ -23,7 +23,16 @@ const int SENSOR_METAL = 13;
 const int SENSOR_POL = 10;
 const int SENSOR_START = 15;
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
+int PIECE_COUNT = 0;
+int PIECE_BIG_COUNT = 0;
+int PIECE_MEDIUM_COUNT = 0;
+int PIECE_SMALL_COUNT = 0;
+
+#define V_BIG V4
+#define V_MEDIUM V3
+#define V_SMALL V2
+#define V_TOTAL V1
+
 String* read_piece();
 
 void setup() {
@@ -237,12 +246,20 @@ String* read_piece() {
   // lógical para definir o tamanho da peça baseado na leitura do sensores
   // de acordo com o padrão da esteira
   if (size_b == 1) {
+    PIECE_BIG_COUNT++;
+    Blynk.virtualWrite(V_BIG, PIECE_BIG_COUNT);
     size = "Grande";
   } else if (size_s == 1 && size_m == 1) {
+    PIECE_MEDIUM_COUNT++;
+    Blynk.virtualWrite(V_MEDIUM, PIECE_MEDIUM_COUNT);
     size = "Medio";
   } else if (size_s == 1 && size_m == 0) {
+    PIECE_SMALL_COUNT++;
+    Blynk.virtualWrite(V_SMALL, PIECE_SMALL_COUNT);
     size = "Pequeno";
   } else if (size_m == 1) {
+    PIECE_MEDIUM_COUNT++;
+    Blynk.virtualWrite(V_MEDIUM, PIECE_MEDIUM_COUNT);
     size = "Medio";
   }
 
@@ -251,6 +268,10 @@ String* read_piece() {
   String* piece = new String[2];
   piece[0] = size;
   piece[1] = material;
+
+  // incrementar o total de peças
+  PIECE_COUNT++;
+  Blynk.virtualWrite(V1, PIECE_COUNT);
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -267,6 +288,7 @@ void waiting_piece_message() {
   lcd.print("Aguardando ");
   lcd.setCursor(0, 1);
   lcd.print("Sensor...");
+  // delay(200);
 }
 
 BLYNK_WRITE(V0)
@@ -280,7 +302,12 @@ BLYNK_WRITE(V0)
   }
 }
 
+// This function is called every time the device is connected to the Blynk.Cloud
 BLYNK_CONNECTED()
 {
   Serial.println("conectado blynk");
+  Blynk.virtualWrite(V_TOTAL, 0);
+  Blynk.virtualWrite(V_BIG, 0);
+  Blynk.virtualWrite(V_MEDIUM, 0);
+  Blynk.virtualWrite(V_SMALL, 0);
 }
