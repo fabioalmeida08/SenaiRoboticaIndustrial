@@ -1,6 +1,8 @@
 
 # Trabalho do Curso de Robótica Industrial Senai
 
+Projeto desenvolvido com o objetivo de integrar o microcontrolador ESP-8266 em uma arquitetura serverless na nuvem AWS. Esta iniciativa visa a criação de um dispositivo IoT que se conecta diretamente à linha de produção, realizando o registro preciso das peças à medida que passam pelo leitor. A integração permite um monitoramento em tempo real e fornece dados para otimização de processos e tomada de decisões estratégicas na indústria.
+
 ![imagem_arquitetura](./arquitetura_serverless_aws.png "arquitetura serveless")
 
 ## integração com a Esteira e o CB3
