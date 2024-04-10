@@ -12,12 +12,16 @@ Sistema onde cada passagem de peça pelos leitores da esteira envia um sinal à 
 
 OBS: No vídeo, é possível visualizar a notificação do Telegram relacionada à peça em questão, exatamente aos 40 segundos.
 ## Integração com API do Telegram.
-A integração do bot com a arquitetura possibilita não apenas consultar, mas também filtrar o registro das últimas 5 peças com base em critérios como tipo de peça e seu tamanho específico.
-#### Recebimento das mensagems.
+
+#### Recebimento de mensagens.
+Após cada registro de peça no sistema, uma notificação automatizada é imediatamente enviada para o Telegram, fornecendo informações sobre a última peça registrada. 
+
 https://github.com/fabioalmeida08/SenaiRoboticaIndustrial/assets/91635002/c1eece0f-74c3-4a23-9588-12d1d96e31a0
 
-https://github.com/fabioalmeida08/SenaiRoboticaIndustrial/assets/91635002/a7ba8ece-9185-4cb9-a5ad-eacc215e6937
 #### Comandos do bot. 
+A integração do bot com a arquitetura possibilita não apenas consultar, mas também filtrar o registro das últimas 5 peças com base em critérios como tipo de peça e seu tamanho específico.
+
+https://github.com/fabioalmeida08/SenaiRoboticaIndustrial/assets/91635002/a7ba8ece-9185-4cb9-a5ad-eacc215e6937
 
 https://github.com/fabioalmeida08/SenaiRoboticaIndustrial/assets/91635002/c56ebadb-460d-4619-922b-0712a75c0714
 #### Comandos inválidos.
